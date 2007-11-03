@@ -20,6 +20,7 @@ This module builds rpm packages.
 use strict;
 use Carp;
 use RPM4;
+use String::ShellQuote;
 use version; our $VERSION = qv('0.1.0');
 
 =head1 CLASS METHODS
