@@ -141,11 +141,16 @@ sub new {
 
 =head1 INSTANCE METHODS
 
+=head2 build($spec_file, %options)
+
 =cut
 
-sub _build {
-    my ($self, $spec_file, $spec, %options) = @_;
+sub build {
+    my ($self, $spec_file, %options) = @_;
+    croak "Not a class method" unless ref $self;
 
+    my $spec = RPM4::Spec->new($spec_file, force => 1)
+        or croak "Unable to parse spec $spec_file\n";
     my $header = $spec->srcheader();
 
     if ($self->{_build_requires_callback}) {
