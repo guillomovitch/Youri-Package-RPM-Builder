@@ -29,7 +29,7 @@ use version; our $VERSION = qv('0.1.0');
 
 Creates and returns a new Youri::Package::RPM::Builder object.
 
-Avaiable options:
+Available options:
 
 =over
 
@@ -45,17 +45,6 @@ rpm top-level directory (default: rpm %_topdir macro).
 
 rpm source directory (default: rpm %_sourcedir macro).
 
-=item options $options
-
-rpm build options.
-
-=item build_source true/false
-
-build source package (default: true).
-
-=item build_binaries true/false
-
-build binary packages (default: true).
 
 =item build_requires_callback $callback
 
@@ -143,11 +132,33 @@ sub new {
 
 =head2 build($spec_file, %options)
 
+Available options:
+
+=over
+
+=item rpm_options $options
+
+rpm build options.
+
+=item build_source true/false
+
+build source package (default: true).
+
+=item build_binaries true/false
+
+build binary packages (default: true).
+
+=back
+
 =cut
 
 sub build {
     my ($self, $spec_file, %options) = @_;
     croak "Not a class method" unless ref $self;
+
+    $options{build_binaries}  = 1  unless defined $options{build_binaries};
+    $options{build_source}    = 1  unless defined $options{build_source};
+    $options{rpm_options}     = "" unless defined $options{rpm_options};
 
     my $spec = RPM4::Spec->new($spec_file, force => 1)
         or croak "Unable to parse spec $spec_file\n";
@@ -184,14 +195,14 @@ sub build {
     $command .= " --define '_sourcedir $self->{_sourcedir}'";
 
     my @dirs = qw/builddir/;
-    if ($self->{_build_source} && $self->{_build_binaries}) {
-        $command .= " -ba $self->{_options} $spec_file";
+    if ($options{build_source} && $options{build_binaries}) {
+        $command .= " -ba $options{rpm_options} $spec_file";
         push(@dirs, qw/rpmdir srcrpmdir/);
-    } elsif ($self->{_build_binaries}) {
-        $command .= " -bb $self->{_options} $spec_file";
+    } elsif ($options{build_binaries}) {
+        $command .= " -bb $options{rpm_options} $spec_file";
         push(@dirs, qw/rpmdir/);
-    } elsif ($self->{_build_source}) {
-        $command .= " -bs $self->{_options} --nodeps $spec_file";
+    } elsif ($options{build_source}) {
+        $command .= " -bs $options{rpm_options} --nodeps $spec_file";
         push(@dirs, qw/srcrpmdir/);
     }
     $command .= " >/dev/null 2>&1" unless $self->{_verbose} > 1;
