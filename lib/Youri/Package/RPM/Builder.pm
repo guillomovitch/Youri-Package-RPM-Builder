@@ -45,7 +45,6 @@ rpm top-level directory (default: rpm %_topdir macro).
 
 rpm source directory (default: rpm %_sourcedir macro).
 
-
 =item build_requires_callback $callback
 
 callback to execute before build, with build dependencies as argument (default:
@@ -118,11 +117,12 @@ sub new {
     my $self = bless {
         _topdir                  => $topdir,
         _sourcedir               => $sourcedir,
-        _verbose                 => $options{verbose}                 || 0,
-        _build_source            => $options{build_source}            || 1,
-        _build_binaries          => $options{build_binaries}          || 1,
-        _build_requires_callback => $options{build_requires_callback} || undef,
-        _build_results_callback  => $options{build_results_callback}  || undef,
+        _verbose                 => defined $options{verbose}                 ?
+            $options{verbose}                 : 0,
+        _build_requires_callback => defined $options{build_requires_callback} ?
+            $options{build_requires_callback} : undef,
+        _build_results_callback  => defined $options{build_results_callback}  ?
+            $options{build_results_callback}  : undef,
     }, $class;
 
     return $self;
