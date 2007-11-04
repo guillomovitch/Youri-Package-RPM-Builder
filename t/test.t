@@ -29,7 +29,6 @@ my ($spec_file) = RPM4::installsrpm($source);
 
 my $builder = Youri::Package::RPM::Builder->new(
     topdir => $topdir,
-    options => '>/dev/null 2>&1'
 );
 isa_ok($builder, 'Youri::Package::RPM::Builder');
 
