@@ -9,7 +9,7 @@ Youri::Package::RPM::Builder - Build RPM packages
 =head1 SYNOPSIS
 
     my $builder = Youri::Package::RPM::Builder->new();
-    $builder->build('foo', '2.0');
+    $builder->build('foo');
 
 =head1 DESCRIPTION
 
