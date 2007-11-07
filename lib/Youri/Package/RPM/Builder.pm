@@ -19,9 +19,13 @@ This module builds rpm packages.
 
 use strict;
 use Carp;
+use POSIX qw(setlocale LC_ALL);
 use RPM4;
 use String::ShellQuote;
 use version; our $VERSION = qv('0.1.0');
+
+# we rely on parsing rpm errors strings, so we have to ensure locale neutrality
+setlocale( LC_ALL, "C" );
 
 =head1 CLASS METHODS
 
