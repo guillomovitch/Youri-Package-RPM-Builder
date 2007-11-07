@@ -85,7 +85,9 @@ sub new {
                 # we can't use multiple args version of system here, as we
                 # can't assume given command is just a program name,
                 # as in 'sudo rurpmi' case
-                system($command . ' ' . shell_quote(@_));
+                my $result = system($command . ' ' . shell_quote(@_));
+                croak("Error while executing build requires command: $?\n")
+                    if $result != 0;
             }
         }
     }
@@ -98,7 +100,9 @@ sub new {
                     $options{build_results_command}
             ) {
                 # same issue here
-                system($command . ' ' . shell_quote(@_));
+                my $result = system($command . ' ' . shell_quote(@_));
+                croak("Error while executing build results command: $?\n")
+                    if $result != 0;
             }
         }
     }
