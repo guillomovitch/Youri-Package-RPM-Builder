@@ -1,2 +1,5 @@
 2007-11-17 Guillaume Rousse <guillomovitch@zarb.org> 0.1.0
 	* initial release
+
+2007-11-17 Guillaume Rousse <guillomovitch@zarb.org> 0.1.1
+	* subsequent release without incorrect test file
