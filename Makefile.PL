@@ -7,6 +7,7 @@ WriteMakefile(
     AUTHOR       => 'Youri project <youri@zarb.org>',
     PREREQ_PM    => {
         'RPM4'               => 0,
+        'Test::Exception'    => 0,
         'String::ShellQuote' => 0,
         'version'            => 0
     }
