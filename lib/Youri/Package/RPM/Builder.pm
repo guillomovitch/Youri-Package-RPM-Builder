@@ -15,6 +15,14 @@ Youri::Package::RPM::Builder - Build RPM packages
 
 This module builds rpm packages.
 
+=head1 CONFIGURATION
+
+The system configuration file for this module is
+@sysconfdir@/youri/builder.conf. The user configuration file is
+$HOME/.youri/builder.conf. The last one has precedence on the first one.
+
+=over
+
 =cut
 
 use strict;
@@ -49,24 +57,6 @@ rpm top-level directory (default: rpm %_topdir macro).
 
 rpm source directory (default: rpm %_sourcedir macro).
 
-=item build_requires_callback $callback
-
-callback to execute before build, with build dependencies as argument (default:
-none).
-
-=item build_requires_command $command
-
-external command (or list of commands) to execute before build, with build
-dependencies as argument (default: none). Takes precedence over previous option.
-
-=item build_results_callback $callback
-
-callback to execute after build, with build packages as argument (default:
-none).
-
-=item build_results_command $command
-
-external command (or list of commands) to execute after build, with build packages as argument (default: none). Takes precedence over previous option.
 
 =back
 
@@ -74,38 +64,6 @@ external command (or list of commands) to execute after build, with build packag
 
 sub new {
     my ($class, %options) = @_;
-
-    if ($options{build_requires_command}) {
-        $options{build_requires_callback} = sub {
-            foreach my $command (
-                ref $options{build_requires_command} eq 'ARRAY' ?
-                    @{$options{build_requires_command}} :
-                    $options{build_requires_command}
-            ) {
-                # we can't use multiple args version of system here, as we
-                # can't assume given command is just a program name,
-                # as in 'sudo rurpmi' case
-                my $result = system($command . ' ' . shell_quote(@_));
-                croak("Error while executing build requires command: $?\n")
-                    if $result != 0;
-            }
-        }
-    }
-
-    if ($options{build_results_command}) {
-        $options{build_results_callback} = sub {
-            foreach my $command (
-                ref $options{build_results_command} eq 'ARRAY' ?
-                    @{$options{build_results_command}} :
-                    $options{build_results_command}
-            ) {
-                # same issue here
-                my $result = system($command . ' ' . shell_quote(@_));
-                croak("Error while executing build results command: $?\n")
-                    if $result != 0;
-            }
-        }
-    }
 
     # force internal rpmlib configuration
     my ($topdir, $sourcedir);
@@ -122,15 +80,57 @@ sub new {
         $sourcedir = RPM4::expand('%_sourcedir');
     }
 
+    my $config = Youri::Config->new(
+        directories => [ '@sysconfdir@/youri', "$ENV{HOME}/.youri"  ],
+        file => 'builder.conf',
+    );
+
+    my $build_requires_command = $config->get_param('build_requires_command');
+    my $build_requires_callback;
+    if ($build_requires_command) {
+        $build_requires_callback = sub {
+            foreach my $command (
+                ref $build_requires_command eq 'ARRAY' ?
+                    @{$build_requires_command} :
+                    $build_requires_command
+            ) {
+                # we can't use multiple args version of system here, as we
+                # can't assume given command is just a program name,
+                # as in 'sudo rurpmi' case
+                my $result = system($command . ' ' . shell_quote(@_));
+                croak("Error while executing build requires command: $?\n")
+                    if $result != 0;
+            }
+        }
+    }
+
+    my $build_results_command = $config->get_param('build_result_command');
+    my $build_results_callback;
+    if ($build_results_command) {
+        $build_results_callback = sub {
+            foreach my $command (
+                ref $build_results_command eq 'ARRAY' ?
+                    @{$build_results_command} :
+                    $build_results_command
+            ) {
+                # same issue here
+                my $result = system($command . ' ' . shell_quote(@_));
+                croak("Error while executing build results command: $?\n")
+                    if $result != 0;
+            }
+        }
+    }
+
     my $self = bless {
+        _config                  => $config,
         _topdir                  => $topdir,
         _sourcedir               => $sourcedir,
-        _verbose                 => defined $options{verbose}                 ?
-            $options{verbose}                 : 0,
-        _build_requires_callback => defined $options{build_requires_callback} ?
-            $options{build_requires_callback} : undef,
-        _build_results_callback  => defined $options{build_results_callback}  ?
-            $options{build_results_callback}  : undef,
+        _verbose                 => defined $options{verbose}        ?
+            $options{verbose}        : 0,
+        _build_requires_callback => defined $build_requires_callback ?
+            $build_requires_callback : undef,
+        _build_results_callback  => defined $build_results_callback  ?
+            $build_results_callback  : undef,
     }, $class;
 
     return $self;

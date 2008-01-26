@@ -5,6 +5,7 @@ WriteMakefile(
     NAME         => 'Youri::Package::RPM::Builder',
     VERSION_FROM => 'lib/Youri/Package/RPM/Builder.pm',
     AUTHOR       => 'Youri project <youri@zarb.org>',
+    PM_FILTER    => '$(PERLRUN) -p -e "s|\@sysconfdir@|$(SYSCONFDIR)|"',
     PREREQ_PM    => {
         'RPM4'               => 0,
         'Test::Exception'    => 0,
@@ -13,7 +14,22 @@ WriteMakefile(
     }
 );
 
-sub MY::postamble {
+package MY;
+
+sub post_constants {
+    my ($self) = @_;
+    my $sysconfdir =
+        $self->{ARGS}->{SYSCONFDIR} ||
+        ($self->{ARGS}->{PREFIX} ?
+            $self->{ARGS}->{PREFIX} . '/etc' :
+            '/usr/local/etc');
+    return <<EOF;
+SYSCONFDIR = $sysconfdir
+EOF
+}
+
+
+sub postamble {
    return <<'EOF';
 .PHONY: svntag
 SVNPATH = svn+ssh://youri.zarb.org/home/projects/youri/svn/soft/Package-RPM-Builder
@@ -24,4 +40,17 @@ svntag:
 		$(SVNPATH)/tags/release-$(VERSION)
 
 EOF
+}
+
+sub install {
+    my ($self) = @_;
+    my $install = $self->SUPER::install(@_);
+    $install =~ s/install :: all pure_install doc_install/install :: all pure_install doc_install config_install/;
+    $install .= <<'EOF';
+config_install :
+	install -d -m 755 $(DESTDIR)$(SYSCONFDIR)/youri
+	install -m 644 etc/builder.conf $(DESTDIR)$(SYSCONFDIR)/youri
+
+EOF
+    return $install;
 }
