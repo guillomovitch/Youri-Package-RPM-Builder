@@ -198,9 +198,10 @@ sub build {
         }
     }
 
-    my $command = "rpm";
-    $command .= " --define '_topdir $self->{_topdir}'";
-    $command .= " --define '_sourcedir $self->{_sourcedir}'";
+    my $command = 
+        "rpmbuild" .
+        " --define '_topdir $self->{_topdir}'" .
+        " --define '_sourcedir $self->{_sourcedir}'";
 
     my @dirs = qw/builddir/;
     if ($options{build_source} && $options{build_binaries}) {
