@@ -22,7 +22,7 @@ use Carp;
 use POSIX qw(setlocale LC_ALL);
 use RPM4;
 use String::ShellQuote;
-use version; our $VERSION = qv('0.1.2');
+use version; our $VERSION = qv('0.2.0');
 
 # we rely on parsing rpm errors strings, so we have to ensure locale neutrality
 setlocale( LC_ALL, "C" );
