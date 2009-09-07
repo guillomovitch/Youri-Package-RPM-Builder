@@ -170,14 +170,18 @@ sub build {
         $options{options} = '';
     }
 
-    my $spec = RPM4::Spec->new($spec_file, force => 1)
-        or croak "Unable to parse spec $spec_file\n";
-    my $header = $spec->srcheader();
+    my $spec;
+    
+    if ($self->{_build_requires_callback} or $self->{_build_results_callback}) {
+        $spec = RPM4::Spec->new($spec_file, force => 1)
+            or croak "Unable to parse spec $spec_file\n";
+    }
 
     if ($self->{_build_requires_callback}) {
         print "managing build dependencies\n"
             if $self->{_verbose};
 
+        my $header = $spec->srcheader();
         my $db = RPM4::Transaction->new();
         $db->transadd($header, "", 0);
         $db->transcheck();
