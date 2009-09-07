@@ -174,7 +174,10 @@ sub build {
 
     my $spec;
     
-    if ($self->{_build_requires_callback} or $self->{_build_results_callback}) {
+    if (
+        $self->{_build_requires_callback} or
+        $self->{_build_results_callback}
+    ) {
         $spec = RPM4::Spec->new($spec_file, force => 1)
             or croak "Unable to parse spec $spec_file\n";
     }
