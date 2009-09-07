@@ -162,14 +162,14 @@ sub build {
     my ($self, $spec_file, %options) = @_;
     croak "Not a class method" unless ref $self;
 
-    if (! defined $options{stage}) {
-        $options{stage} = 'a';
-    } else {
+    if (defined $options{stage}) {
         croak "invalid stage value $options{stage}"
             unless $options{stage} =~ /^[abpcils]$/;
+    } else {
+        $options{stage} = 'a';
     }
-    if (! defined $options{options}) {
-        $options{options} = '';
+    if (defined $options{rpm_options}) {
+        carp "deprecated rpm_options used";
     }
 
     my $spec;
@@ -213,7 +213,9 @@ sub build {
         "rpmbuild -b$options{stage}" .
         " --define '_topdir $self->{_topdir}'" .
         " --define '_sourcedir $self->{_sourcedir}'" .
-        " $options{options} $spec_file";
+        ($options{options}     ? " $options{options}"     : '') .
+        ($options{rpm_options} ? " $options{rpm_options}" : '') .
+        " $spec_file";
     $command .= " >/dev/null 2>&1" unless $self->{_verbose} > 1;
 
     my @dirs = (
