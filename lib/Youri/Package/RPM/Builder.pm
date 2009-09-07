@@ -18,6 +18,8 @@ This module builds rpm packages.
 =cut
 
 use strict;
+use warnings;
+
 use Carp;
 use POSIX qw(setlocale LC_ALL);
 use RPM4;
