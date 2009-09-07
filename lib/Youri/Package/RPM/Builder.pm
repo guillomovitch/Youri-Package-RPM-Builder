@@ -144,17 +144,13 @@ Available options:
 
 =over
 
-=item rpm_options $options
+=item options $options
 
 rpm build options.
 
-=item build_source true/false
+=item stage $stage
 
-build source package (default: true).
-
-=item build_binaries true/false
-
-build binary packages (default: true).
+rpm build stage, among the following values: a, b, p, c, i, l or s (default: a).
 
 =back
 
@@ -164,9 +160,15 @@ sub build {
     my ($self, $spec_file, %options) = @_;
     croak "Not a class method" unless ref $self;
 
-    $options{build_binaries}  = 1  unless defined $options{build_binaries};
-    $options{build_source}    = 1  unless defined $options{build_source};
-    $options{rpm_options}     = "" unless defined $options{rpm_options};
+    if (! defined $options{stage}) {
+        $options{stage} = 'a';
+    } else {
+        croak "invalid stage value $options{stage}"
+            unless $options{stage} =~ /^[abpcils]$/;
+    }
+    if (! defined $options{options}) {
+        $options{options} = '';
+    }
 
     my $spec = RPM4::Spec->new($spec_file, force => 1)
         or croak "Unable to parse spec $spec_file\n";
@@ -199,22 +201,17 @@ sub build {
     }
 
     my $command = 
-        "rpmbuild" .
+        "rpmbuild -b$options{stage}" .
         " --define '_topdir $self->{_topdir}'" .
-        " --define '_sourcedir $self->{_sourcedir}'";
-
-    my @dirs = qw/builddir/;
-    if ($options{build_source} && $options{build_binaries}) {
-        $command .= " -ba $options{rpm_options} $spec_file";
-        push(@dirs, qw/rpmdir srcrpmdir/);
-    } elsif ($options{build_binaries}) {
-        $command .= " -bb $options{rpm_options} $spec_file";
-        push(@dirs, qw/rpmdir/);
-    } elsif ($options{build_source}) {
-        $command .= " -bs $options{rpm_options} --nodeps $spec_file";
-        push(@dirs, qw/srcrpmdir/);
-    }
+        " --define '_sourcedir $self->{_sourcedir}'" .
+        " $options{options} $spec_file";
     $command .= " >/dev/null 2>&1" unless $self->{_verbose} > 1;
+
+    my @dirs = (
+        'builddir',
+        ($options{stage} eq 'b' ? () : 'srcrpmdir'),
+        ($options{stage} eq 's' ? () : 'rpmdir')
+    );
 
     # check needed directories exist
     foreach my $dir (map { RPM4::expand("\%_$_") } @dirs) {
