@@ -6,3 +6,9 @@
 
 2008-02-15 Guillaume Rousse <guillomovitch@zarb.org> 0.1.2
 	* use rpmbuild, not rpm, for building packages
+
+2009-09-13 Guillaume Rousse <guillomovitch@zarb.org> 0.2.0
+        * new stage argument
+        * rename rpm_options argument to options
+	* only parse the spec file if callbacks are defined, otherwise it's a
+	  waste of time
