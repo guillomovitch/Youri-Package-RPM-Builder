@@ -23,7 +23,7 @@ use warnings;
 use Carp;
 use POSIX qw(setlocale LC_ALL);
 use String::ShellQuote;
-use Youri::Package::RPM;
+use Youri::Package::RPM 0.002;
 use version; our $VERSION = qv('0.2.0');
 
 # we rely on parsing rpm errors strings, so we have to ensure locale neutrality
