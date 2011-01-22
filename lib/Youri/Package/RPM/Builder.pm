@@ -22,12 +22,14 @@ use warnings;
 
 use Carp;
 use POSIX qw(setlocale LC_ALL);
-use RPM4;
 use String::ShellQuote;
+use Youri::Package::RPM;
 use version; our $VERSION = qv('0.2.0');
 
 # we rely on parsing rpm errors strings, so we have to ensure locale neutrality
 setlocale( LC_ALL, "C" );
+
+my $wrapper_class = Youri::Package::RPM->get_wrapper_class();
 
 =head1 CLASS METHODS
 
@@ -113,15 +115,15 @@ sub new {
     my ($topdir, $sourcedir);
     if ($options{topdir}) {
         $topdir = File::Spec->rel2abs($options{topdir});
-        RPM4::add_macro("_topdir $topdir");
+        $wrapper_class->add_macro("_topdir $topdir");
     } else {
-        $topdir = RPM4::expand('%_topdir');
+        $topdir = $wrapper_class->expand_macro('%_topdir');
     }
     if ($options{sourcedir}) {
         $sourcedir = File::Spec->rel2abs($options{sourcedir});
-        RPM4::add_macro("_sourcedir $sourcedir");
+        $wrapper_class->add_macro("_sourcedir $sourcedir");
     } else {
-        $sourcedir = RPM4::expand('%_sourcedir');
+        $sourcedir = $wrapper_class->expand_macro('%_sourcedir');
     }
 
     my $self = bless {
@@ -178,7 +180,7 @@ sub build {
         $self->{_build_requires_callback} or
         $self->{_build_results_callback}
     ) {
-        $spec = RPM4::Spec->new($spec_file, force => 1)
+        $spec = $wrapper_class->new_spec($spec_file, force => 1)
             or croak "Unable to parse spec $spec_file\n";
     }
 
@@ -187,23 +189,40 @@ sub build {
             if $self->{_verbose};
 
         my $header = $spec->srcheader();
-        my $db = RPM4::Transaction->new();
-        $db->transadd($header, "", 0);
-        $db->transcheck();
-        my $pbs = $db->transpbs();
+        my $db = $wrapper_class->new_transaction();
+        my $pbs;
+        if ($wrapper_class eq 'Youri::Package::RPM::RPM4') {
+            $db->transadd($header, "", 0);
+            $db->transcheck();
+            $pbs = $db->transpbs();
+        } else {
+            $db->add_install($header, "", 0);
+            $db->check();
+            $pbs = $db->problems();
+        }
  
         if ($pbs) {
             my @requires;
-            $pbs->init();
-            while($pbs->hasnext()) {
-                my ($require) = $pbs->problem() =~ /^
-                    (\S+) \s              # dependency
-                    (?:\S+ \s \S+ \s)?    # version
-                    is \s needed \s by \s # problem
-                    \S+                   # source package
-                    $/x;
-                next unless $require;
-                push(@requires, $require);
+            my $pattern = qr/^
+                (\S+) \s              # dependency
+                (?:\S+ \s \S+ \s)?    # version
+                is \s needed \s by \s # problem
+                \S+                   # source package
+                $/x;
+            if ($wrapper_class eq 'Youri::Package::RPM::RPM4') {
+                $pbs->init();
+                while($pbs->hasnext()) {
+                    my ($require) = $pbs->problem() =~ $pattern;
+                    next unless $require;
+                    push(@requires, $require);
+                }
+            } else {
+                for (my $i=0; $i < $pbs->count; $i++) {
+                    my %info = $pbs->pb_info($i);
+                    my ($require) = $info{string} =~ $pattern;
+                    next unless $require;
+                    push(@requires, $require);
+                }
             }
             $self->{_build_requires_callback}->(@requires);
         }
@@ -225,7 +244,7 @@ sub build {
     );
 
     # check needed directories exist
-    foreach my $dir (map { RPM4::expand("\%_$_") } @dirs) {
+    foreach my $dir (map { $wrapper_class->expand_macro("\%_$_") } @dirs) {
         next if -d $dir;
         mkdir $dir or croak "Can't create directory $dir: $!\n";
     }

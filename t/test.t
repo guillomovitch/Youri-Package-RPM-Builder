@@ -7,7 +7,13 @@ use File::Path;
 use File::Temp qw/tempdir/;
 use Test::More tests => 6;
 use Test::Exception;
-use RPM4;
+use Youri::Package::RPM;
+
+my $wrapper_class = Youri::Package::RPM->get_wrapper_class();
+my $header_class =
+    $wrapper_class eq 'Youri::Package::RPM::RPM4' ? 'RPM4::Header' :
+    $wrapper_class eq 'Youri::Package::RPM::RPM'  ? 'RPM::Header'  :
+                                                    undef          ;
 
 BEGIN {
     use_ok('Youri::Package::RPM::Builder');
@@ -23,9 +29,9 @@ foreach my $arch qw/noarch/ {
     mkpath(["$topdir/RPMS/$arch"]);
 };
 
-RPM4::setverbosity(0);
-RPM4::add_macro("_topdir $topdir");
-my ($spec_file) = RPM4::installsrpm($source);
+$wrapper_class->set_verbosity(4);
+$wrapper_class->add_macro("_topdir $topdir");
+my ($spec_file) = $wrapper_class->install_srpm($source);
 
 my $builder = Youri::Package::RPM::Builder->new(
     topdir => $topdir,
@@ -41,5 +47,5 @@ is(scalar @binaries, 1, 'one binary package');
 my @sources = <$topdir/SRPMS/*.rpm>;
 is(scalar @sources, 1, 'one source package');
 
-my $package = RPM4::Header->new($sources[0]);
-isa_ok($package, 'RPM4::Header');
+my $package = $wrapper_class->new_header($sources[0]);
+isa_ok($package, $header_class);
