@@ -6,7 +6,7 @@ WriteMakefile(
     VERSION_FROM => 'lib/Youri/Package/RPM/Builder.pm',
     AUTHOR       => 'Youri project <youri@zarb.org>',
     PREREQ_PM    => {
-        'RPM4'               => 0,
+        'Youri::Package'     => 0.002,
         'Test::Exception'    => 0,
         'String::ShellQuote' => 0,
         'version'            => 0
